@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel de Controle — Klabin</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --bg2: #181c27;
+    --bg3: #1f2436;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #f0f2f7;
+    --text2: #8b92a8;
+    --text3: #555e78;
+    --blue: #4f8ef7;
+    --blue-bg: rgba(79,142,247,0.12);
+    --green: #3ecf8e;
+    --green-bg: rgba(62,207,142,0.12);
+    --amber: #f7a84f;
+    --amber-bg: rgba(247,168,79,0.12);
+    --red: #f7604f;
+    --red-bg: rgba(247,96,79,0.12);
+    --purple: #a78bfa;
+    --purple-bg: rgba(167,139,250,0.12);
+    --accent: #4f8ef7;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* Layout */
+  .sidebar {
+    position: fixed; top: 0; left: 0;
+    width: 220px; height: 100vh;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    padding: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo-title {
+    font-size: 15px; font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+  .logo-sub {
+    font-size: 11px; color: var(--text3);
+    margin-top: 2px;
+  }
+
+  .nav { padding: 12px 10px; flex: 1; }
+  .nav-label {
+    font-size: 10px; font-weight: 500;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0 10px;
+    margin: 12px 0 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 10px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    color: var(--text2);
+    font-size: 13px;
+    transition: all 0.15s;
+    margin-bottom: 2px;
+  }
+  .nav-item:hover { background: var(--bg3); color: var(--text); }
+  .nav-item.active { background: var(--blue-bg); color: var(--blue); }
+  .nav-item .icon { font-size: 15px; width: 18px; text-align: center; }
+
+  .sidebar-footer {
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+    font-size: 11px; color: var(--text3);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .dot-live {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; } 50% { opacity: 0.4; }
+  }
+
+  .main { margin-left: 220px; padding: 28px 32px; min-height: 100vh; }
+
+  .header {
+    display: flex; align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    flex-wrap: wrap; gap: 12px;
+  }
+  .header-title { font-size: 22px; font-weight: 600; letter-spacing: -0.5px; }
+  .header-sub { font-size: 13px; color: var(--text2); margin-top: 3px; }
+
+  .header-actions { display: flex; gap: 8px; align-items: center; }
+  .btn {
+    padding: 8px 16px; border-radius: var(--radius);
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; border: 1px solid var(--border2);
+    background: var(--bg3); color: var(--text2);
+    font-family: var(--font);
+    transition: all 0.15s;
+  }
+  .btn:hover { background: var(--bg2); color: var(--text); border-color: var(--border2); }
+  .btn-primary {
+    background: var(--blue); color: #fff;
+    border-color: transparent;
+  }
+  .btn-primary:hover { opacity: 0.88; color: #fff; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 24px; padding: 4px; background: var(--bg2); border-radius: var(--radius); border: 1px solid var(--border); width: fit-content; }
+  .tab-btn {
+    padding: 6px 16px; border-radius: 7px;
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; border: none; background: transparent;
+    color: var(--text2); font-family: var(--font);
+    transition: all 0.15s;
+  }
+  .tab-btn.active { background: var(--bg3); color: var(--text); }
+  .tab-btn:hover:not(.active) { color: var(--text); }
+
+  /* Metrics */
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .metric-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 18px 20px;
+    transition: border-color 0.15s;
+  }
+  .metric-card:hover { border-color: var(--border2); }
+  .metric-icon { font-size: 18px; margin-bottom: 12px; }
+  .metric-label { font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; }
+  .metric-value { font-size: 30px; font-weight: 600; color: var(--text); margin: 4px 0; letter-spacing: -1px; }
+  .metric-delta {
+    font-size: 12px; color: var(--text3);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .delta-up { color: var(--green); }
+  .delta-down { color: var(--red); }
+
+  /* Charts row */
+  .charts-row { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 24px; }
+
+  .card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 20px;
+  }
+  .card-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px;
+  }
+  .card-title { font-size: 13px; font-weight: 500; color: var(--text); }
+  .card-sub { font-size: 12px; color: var(--text3); margin-top: 1px; }
+
+  /* Legend */
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+  /* Table */
+  .table-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  .table-header-row {
+    padding: 16px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap; gap: 8px;
+  }
+
+  .search-input {
+    padding: 7px 12px; border-radius: var(--radius);
+    border: 1px solid var(--border); background: var(--bg3);
+    color: var(--text); font-size: 13px; font-family: var(--font);
+    width: 200px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-input::placeholder { color: var(--text3); }
+  .search-input:focus { border-color: var(--blue); }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left; padding: 10px 20px;
+    font-size: 11px; font-weight: 500;
+    color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr { transition: background 0.1s; }
+  tbody tr:hover { background: var(--bg3); }
+  tbody td { padding: 12px 20px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  tbody tr:last-child td { border-bottom: none; }
+
+  .num { font-family: var(--mono); font-size: 12px; color: var(--blue); font-weight: 500; }
+  .tipo-text { color: var(--text); }
+  .days-ok { color: var(--text2); }
+  .days-warn { color: var(--amber); font-weight: 500; }
+  .days-danger { color: var(--red); font-weight: 600; }
+
+  /* Badges */
+  .badge {
+    display: inline-flex; align-items: center;
+    padding: 3px 9px; border-radius: 6px;
+    font-size: 11px; font-weight: 500;
+  }
+  .b-blue { background: var(--blue-bg); color: var(--blue); }
+  .b-green { background: var(--green-bg); color: var(--green); }
+  .b-amber { background: var(--amber-bg); color: var(--amber); }
+  .b-red { background: var(--red-bg); color: var(--red); }
+  .b-purple { background: var(--purple-bg); color: var(--purple); }
+
+  /* Info bar */
+  .info-bar {
+    margin-top: 16px; padding: 12px 16px;
+    background: var(--blue-bg); border: 1px solid rgba(79,142,247,0.2);
+    border-radius: var(--radius); font-size: 12px; color: var(--blue);
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* Responsivo */
+  @media (max-width: 900px) {
+    .sidebar { width: 60px; }
+    .logo, .nav-label, .nav-item span, .sidebar-footer span { display: none; }
+    .main { margin-left: 60px; padding: 20px 16px; }
+    .charts-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-title">Controle</div>
+    <div class="logo-sub">Klabin — MDG + TTMS</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-label">Menu</div>
+    <div class="nav-item active">
+      <span class="icon">◈</span>
+      <span>Painel geral</span>
+    </div>
+    <div class="nav-item">
+      <span class="icon">◉</span>
+      <span>SAP MDG</span>
+    </div>
+    <div class="nav-item">
+      <span class="icon">◎</span>
+      <span>TTMS</span>
+    </div>
+    <div class="nav-label">Análise</div>
+    <div class="nav-item">
+      <span class="icon">▦</span>
+      <span>Relatórios</span>
+    </div>
+    <div class="nav-item">
+      <span class="icon">◷</span>
+      <span>Histórico</span>
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="dot-live"></div>
+    <span>Sincronizado</span>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="header">
+    <div>
+      <div class="header-title">Painel de controle</div>
+      <div class="header-sub" id="data-atual"></div>
+    </div>
+    <div class="header-actions">
+      <button class="btn" onclick="exportarCSV()">↓ Exportar CSV</button>
+      <button class="btn btn-primary" onclick="simularAtualizacao()">↻ Atualizar</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="mudarTab(this,'todos')">Todos</button>
+    <button class="tab-btn" onclick="mudarTab(this,'sap')">SAP MDG</button>
+    <button class="tab-btn" onclick="mudarTab(this,'ttms')">TTMS</button>
+  </div>
+
+  <div class="metrics" id="metrics-area"></div>
+
+  <div class="charts-row">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Volume diário de solicitações</div>
+          <div class="card-sub">Últimos 14 dias</div>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#4f8ef7"></div>SAP MDG</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div>TTMS</div>
+        </div>
+      </div>
+      <div style="position:relative;height:200px;">
+        <canvas id="chartVolume" role="img" aria-label="Volume diário de solicitações"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Status atual</div>
+          <div class="card-sub" id="total-sol"></div>
+        </div>
+      </div>
+      <div style="position:relative;height:160px;">
+        <canvas id="chartStatus" role="img" aria-label="Distribuição por status"></canvas>
+      </div>
+      <div class="legend" style="margin-top:12px;justify-content:center;">
+        <div class="legend-item"><div class="legend-dot" style="background:#4f8ef7"></div>Em análise</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#f7a84f"></div>Pendente</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#f7604f"></div>Atrasado</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#3ecf8e"></div>Concluído</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-header-row">
+      <div>
+        <div class="card-title">Solicitações recentes</div>
+        <div class="card-sub" id="filtro-label">Exibindo todas as solicitações</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input class="search-input" type="text" id="busca" placeholder="Buscar por número ou tipo..." oninput="renderTabela()">
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Nº</th>
+          <th>Tipo</th>
+          <th>Sistema</th>
+          <th>Criado em</th>
+          <th>Responsável</th>
+          <th>Status</th>
+          <th>Dias aberto</th>
+        </tr>
+      </thead>
+      <tbody id="tabela-body"></tbody>
+    </table>
+  </div>
+
+  <div class="info-bar">
+    ℹ️ &nbsp;Este painel usa dados de exemplo. Quando conectado ao Power Automate, os dados serão atualizados automaticamente a partir do SAP MDG e TTMS.
+  </div>
+</main>
+
+<script>
+// ============================================================
+// DADOS — substitua aqui quando o Power Automate alimentar
+// ============================================================
+const DADOS = [
+  { num:'CR-2041', tipo:'Alteração de Material',   sistema:'SAP MDG', criado:'27/04/2025', resp:'Ana Lima',     status:'Em análise', dias:1  },
+  { num:'CR-2040', tipo:'Novo Fornecedor',          sistema:'SAP MDG', criado:'26/04/2025', resp:'Carlos Melo',  status:'Pendente',   dias:2  },
+  { num:'CR-2039', tipo:'Bloqueio de Material',     sistema:'SAP MDG', criado:'25/04/2025', resp:'Ana Lima',     status:'Em análise', dias:3  },
+  { num:'CR-2038', tipo:'Alteração de Centro',      sistema:'SAP MDG', criado:'23/04/2025', resp:'Pedro Souza',  status:'Atrasado',   dias:5  },
+  { num:'CR-2035', tipo:'Criação de Material',      sistema:'SAP MDG', criado:'21/04/2025', resp:'Carlos Melo',  status:'Atrasado',   dias:7  },
+  { num:'CR-2031', tipo:'Extensão de Material',     sistema:'SAP MDG', criado:'18/04/2025', resp:'Ana Lima',     status:'Atrasado',   dias:10 },
+  { num:'CR-2028', tipo:'Alteração de Fornecedor',  sistema:'SAP MDG', criado:'15/04/2025', resp:'Pedro Souza',  status:'Concluído',  dias:13 },
+  { num:'TT-0892', tipo:'Treinamento NR-35',        sistema:'TTMS',    criado:'26/04/2025', resp:'Lucia Ferraz', status:'Em análise', dias:2  },
+  { num:'TT-0890', tipo:'Reciclagem EPI',           sistema:'TTMS',    criado:'24/04/2025', resp:'Marcos Costa', status:'Pendente',   dias:4  },
+  { num:'TT-0887', tipo:'Certificação NR-12',       sistema:'TTMS',    criado:'22/04/2025', resp:'Lucia Ferraz', status:'Atrasado',   dias:6  },
+  { num:'TT-0881', tipo:'Treinamento Obrigatório',  sistema:'TTMS',    criado:'20/04/2025', resp:'Marcos Costa', status:'Concluído',  dias:8  },
+  { num:'TT-0875', tipo:'Integração Ambiental',     sistema:'TTMS',    criado:'17/04/2025', resp:'Lucia Ferraz', status:'Concluído',  dias:11 },
+];
+
+const METRICAS = {
+  todos: { hoje:7, andamento:12, atrasadas:4, tempo:'4.8d', deltaHoje:'+2', deltaAnd:'+1', deltaTempo:'-0.3d' },
+  sap:   { hoje:4, andamento:7,  atrasadas:3, tempo:'5.6d', deltaHoje:'+1', deltaAnd:'+2', deltaTempo:'+0.5d' },
+  ttms:  { hoje:3, andamento:5,  atrasadas:1, tempo:'3.9d', deltaHoje:'+1', deltaAnd:'-1', deltaTempo:'-0.8d' },
+};
+
+const STATUS_BADGE = {
+  'Em análise': 'b-blue', 'Pendente': 'b-amber',
+  'Atrasado':   'b-red',  'Concluído': 'b-green'
+};
+const SISTEMA_BADGE = { 'SAP MDG': 'b-blue', 'TTMS': 'b-purple' };
+
+let tabAtual = 'todos';
+let chartVolume = null;
+let chartStatus = null;
+
+// ============================================================
+// DATA
+// ============================================================
+document.getElementById('data-atual').textContent =
+  'Atualizado em ' + new Date().toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+// ============================================================
+// TABS
+// ============================================================
+function mudarTab(el, tab) {
+  tabAtual = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('filtro-label').textContent =
+    tab === 'todos' ? 'Exibindo todas as solicitações' :
+    tab === 'sap'   ? 'Filtrando por SAP MDG' : 'Filtrando por TTMS';
+  renderMetricas();
+  renderTabela();
+  atualizarChartStatus();
+}
+
+// ============================================================
+// MÉTRICAS
+// ============================================================
+function renderMetricas() {
+  const m = METRICAS[tabAtual];
+  const cards = [
+    { icon:'📥', label:'Criadas hoje',    value: m.hoje,      delta: m.deltaHoje,  cor: 'var(--blue)',   tipo: 'up' },
+    { icon:'⏳', label:'Em andamento',    value: m.andamento, delta: m.deltaAnd,   cor: 'var(--amber)',  tipo: 'neu' },
+    { icon:'⚠️', label:'Atrasadas',       value: m.atrasadas, delta: '!',          cor: 'var(--red)',    tipo: 'danger' },
+    { icon:'⏱',  label:'Tempo médio',     value: m.tempo,     delta: m.deltaTempo, cor: 'var(--purple)', tipo: 'time' },
+  ];
+  document.getElementById('metrics-area').innerHTML = cards.map(c => `
+    <div class="metric-card">
+      <div class="metric-icon">${c.icon}</div>
+      <div class="metric-label">${c.label}</div>
+      <div class="metric-value" style="color:${c.cor}">${c.value}</div>
+      <div class="metric-delta">
+        <span class="${c.tipo === 'danger' ? 'delta-down' : c.tipo === 'up' ? 'delta-up' : ''}">${c.delta}</span>
+        <span>vs ontem</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// TABELA
+// ============================================================
+function renderTabela() {
+  const busca = document.getElementById('busca').value.toLowerCase();
+  let lista = DADOS.filter(r => {
+    const ok = tabAtual === 'todos' ? true :
+      tabAtual === 'sap' ? r.sistema === 'SAP MDG' : r.sistema === 'TTMS';
+    const match = busca === '' || r.num.toLowerCase().includes(busca) || r.tipo.toLowerCase().includes(busca);
+    return ok && match;
+  });
+
+  document.getElementById('total-sol').textContent = lista.length + ' solicitações';
+
+  document.getElementById('tabela-body').innerHTML = lista.map(r => {
+    const dcls = r.dias >= 7 ? 'days-danger' : r.dias >= 4 ? 'days-warn' : 'days-ok';
+    return `<tr>
+      <td><span class="num">${r.num}</span></td>
+      <td><span class="tipo-text">${r.tipo}</span></td>
+      <td><span class="badge ${SISTEMA_BADGE[r.sistema]}">${r.sistema}</span></td>
+      <td style="color:var(--text2);font-family:var(--mono);font-size:12px">${r.criado}</td>
+      <td style="color:var(--text2)">${r.resp}</td>
+      <td><span class="badge ${STATUS_BADGE[r.status]}">${r.status}</span></td>
+      <td><span class="${dcls}">${r.dias}d</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ============================================================
+// CHART VOLUME
+// ============================================================
+function criarChartVolume() {
+  const labels = ['14/04','15/04','16/04','17/04','18/04','21/04','22/04','23/04','24/04','25/04','26/04','27/04'];
+  const sapData = [3,5,2,4,6,3,7,4,5,6,8,4];
+  const ttmsData = [1,2,1,3,2,2,3,1,2,3,4,3];
+  chartVolume = new Chart(document.getElementById('chartVolume'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label:'SAP MDG', data: sapData, backgroundColor:'#4f8ef7', borderRadius:4, borderSkipped:false },
+        { label:'TTMS',    data: ttmsData, backgroundColor:'#a78bfa', borderRadius:4, borderSkipped:false },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display:false } },
+      scales: {
+        x: { stacked:false, ticks:{ color:'#555e78', font:{size:11}, maxRotation:45 }, grid:{ color:'rgba(255,255,255,0.04)' }, border:{display:false} },
+        y: { ticks:{ color:'#555e78', font:{size:11}, stepSize:2 }, grid:{ color:'rgba(255,255,255,0.04)' }, border:{display:false} }
+      }
+    }
+  });
+}
+
+// ============================================================
+// CHART STATUS
+// ============================================================
+function atualizarChartStatus() {
+  const lista = tabAtual === 'todos' ? DADOS :
+    DADOS.filter(r => tabAtual === 'sap' ? r.sistema === 'SAP MDG' : r.sistema === 'TTMS');
+  const contagem = { 'Em análise':0, 'Pendente':0, 'Atrasado':0, 'Concluído':0 };
+  lista.forEach(r => { if(contagem[r.status] !== undefined) contagem[r.status]++; });
+  chartStatus.data.datasets[0].data = Object.values(contagem);
+  chartStatus.update();
+}
+
+function criarChartStatus() {
+  const contagem = { 'Em análise':0, 'Pendente':0, 'Atrasado':0, 'Concluído':0 };
+  DADOS.forEach(r => { if(contagem[r.status] !== undefined) contagem[r.status]++; });
+  chartStatus = new Chart(document.getElementById('chartStatus'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(contagem),
+      datasets: [{
+        data: Object.values(contagem),
+        backgroundColor: ['#4f8ef7','#f7a84f','#f7604f','#3ecf8e'],
+        borderWidth: 0, hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display:false } },
+      cutout: '68%'
+    }
+  });
+}
+
+// ============================================================
+// EXPORTAR CSV
+// ============================================================
+function exportarCSV() {
+  const lista = tabAtual === 'todos' ? DADOS :
+    DADOS.filter(r => tabAtual === 'sap' ? r.sistema === 'SAP MDG' : r.sistema === 'TTMS');
+  const header = 'Numero,Tipo,Sistema,Criado,Responsavel,Status,Dias\n';
+  const rows = lista.map(r => `${r.num},${r.tipo},${r.sistema},${r.criado},${r.resp},${r.status},${r.dias}`).join('\n');
+  const blob = new Blob([header+rows], { type:'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'solicitacoes_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+// ============================================================
+// SIMULAR ATUALIZAÇÃO
+// ============================================================
+function simularAtualizacao() {
+  const btn = document.querySelector('.btn-primary');
+  btn.textContent = '↻ Atualizando...';
+  btn.disabled = true;
+  setTimeout(() => {
+    document.getElementById('data-atual').textContent =
+      'Atualizado em ' + new Date().toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    btn.textContent = '↻ Atualizar';
+    btn.disabled = false;
+  }, 1200);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+renderMetricas();
+renderTabela();
+criarChartVolume();
+criarChartStatus();
+</script>
+</body>
+</html>
